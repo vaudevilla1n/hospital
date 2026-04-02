@@ -88,7 +88,7 @@ static void form_select_prev_option(struct form *form)
 	draw_form_entry(form, form->curr_entry);
 }
 
-static inline void move_entry_end(struct form *form) {
+static inline void move_to_form_entry_end(struct form *form) {
 	const struct form_entry *entry = form->entries + form->curr_entry;
 
 	const int label_off = form->x + entry->label_len + lengthof(": ");
@@ -109,7 +109,7 @@ static void exit_read_mode(struct form *form)
 	form->state = FORM_IDLE;
 
 	if (form_input_buffer_len + 1 < FORM_TEXT_BOX_LEN) {
-		move_entry_end(form);
+		move_to_form_entry_end(form);
 
 		attroff(A_BOLD);
 		addch('_');
@@ -120,11 +120,11 @@ static void exit_read_mode(struct form *form)
 
 static void form_read_iteration(struct form *form)
 {
-	if (form_input_buffer_len + 1 < FORM_TEXT_BOX_LEN) {
-		move_entry_end(form);
+	if (form_input_buffer_len + 1 <= FORM_TEXT_BOX_LEN) {
+		move_to_form_entry_end(form);
 
 		attron(A_BOLD);
-		addch('_');
+		addch('I');
 		attroff(A_BOLD);
 	}
 
@@ -133,7 +133,7 @@ static void form_read_iteration(struct form *form)
 	if (c == ESCAPE_KEY) {
 		exit_read_mode(form);
 	} else if (isalpha(c) && form_input_buffer_len + 1 <= FORM_TEXT_BOX_LEN) {
-		move_entry_end(form);
+		move_to_form_entry_end(form);
 
 		addch(c);
 
