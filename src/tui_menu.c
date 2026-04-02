@@ -12,7 +12,7 @@ const struct option tui_main_menu_opts[] = {
 };
 
 const struct option tui_add_menu_opts[] = {
-	{ TUI_ADD, "new patient record" },
+	{ TUI_ADD_PATIENT, "new patient record" },
 	{ TUI_ADD, "new doctor's appointment" },
 	{ TUI_MAIN_MENU, "back" },
 	{ TUI_EXIT, "exit" },
@@ -26,7 +26,7 @@ static inline void init_menu(struct menu *m, const struct option *opts, const pt
 	m->x = TUI_PAGE_X;
 	m->y = TUI_PAGE_Y;
 
-	m->space = 4;
+	m->space = TUI_SPACE_Y;
 
 	m->curr_opt = 0;
 	m->nopts = nopts;

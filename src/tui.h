@@ -1,14 +1,17 @@
 #pragma once
 
+#include <curses.h>
 #include <stdbool.h>
 
 #define ENTER_KEY	'\n'
 
-#define TUI_TITLE_X (COLS * 1/10)
+#define TUI_TITLE_X	(COLS * 1/10)
 #define TUI_TITLE_Y	(LINES * 1/10)
 
 #define TUI_PAGE_X	(COLS * 3/8)
 #define TUI_PAGE_Y	(LINES * 3/10)
+
+#define TUI_SPACE_Y	4
 
 enum tui_state {
 	TUI_NONE,
