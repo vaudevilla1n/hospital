@@ -1,12 +1,11 @@
-#include <stdio.h>
-#include <locale.h>
-#include <curses.h>
+#include "tui.h"
 
 int main(void)
 {
-	initscr();
+	tui_init();
 
-	setlocale(LC_ALL, "");
+	while (!tui_exited)
+		tui_iteration();
 
-	endwin();
+	tui_deinit();
 }
