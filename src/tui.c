@@ -1,5 +1,7 @@
 #include "tui.h"
+#include "tui_menu.h"
 #include "util.h"
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <locale.h>
@@ -10,43 +12,12 @@ bool tui_update = true;
 
 WINDOW *tui_window;
 
-enum tui_state {
-	TUI_MAIN_MENU,
-	TUI_ADD,
-	TUI_VIEW,
-	TUI_SEARCH,
-	TUI_EDIT,
-	TUI_EXIT,
-};
-
 enum tui_state tui_current_state = TUI_MAIN_MENU;
 
 #define ENTER_KEY	'\n'
 
-#define TITLE	"Hospital Management System"	
-
-#define TITLE_X ((COLS - lengthof(TITLE)) * 1/2)
+#define TITLE_X (COLS * 1/10)
 #define TITLE_Y	(LINES * 1/10)
-
-#define MENU_X		TITLE_X
-#define MENU_Y		(LINES * 3/10)
-#define MENU_Y_SPACE	4
-
-struct option {
-	char *text;
-	enum tui_state state;
-};
-
-const struct option menu_options[] = {
-	{ "add information", TUI_ADD },
-	{ "view information", TUI_VIEW },
-	{ "search", TUI_SEARCH },
-	{ "edit information", TUI_EDIT },
-	{ "exit", TUI_EXIT },
-};
-const ptrdiff_t total_menu_options = countof(menu_options); 
-
-ptrdiff_t current_menu_option = 0;
 
 static inline void curses_assert(const int ret, const char *msg)
 {
@@ -67,12 +38,8 @@ void tui_init(void)
 	curses_assert(noecho(), "couldn't set no-echo mode");
 	curses_assert(curs_set(0), "couldn't set cursor visibility mode");
 	curses_assert(keypad(tui_window, TRUE), "couldn't set keypad mode");
-}
 
-static inline void clear_line(const int i)
-{
-	move(i, 0);
-	clrtoeol();
+	init_menus();
 }
 
 static void draw_border(void)
@@ -80,103 +47,66 @@ static void draw_border(void)
 	box(tui_window, ACS_VLINE, ACS_HLINE);
 }
 
-static void draw_title(void)
+static void draw_title(const char *title)
 {
-	mvinsstr(TITLE_Y, TITLE_X, TITLE);
+	mvaddstr(TITLE_Y, TITLE_X, title);
 }
 
-static inline void draw_option(const ptrdiff_t i)
+static void menu_iteration(struct menu *menu)
 {
-	mvinsstr(MENU_Y + (i * MENU_Y_SPACE), MENU_X, menu_options[i].text);
-}
+	switch (getch()) {
+	case 'j':
+	case 'J':	menu_select_next_option(menu); break;
 
-static void draw_selected_option(void)
-{
-	const struct option *opt = menu_options + current_menu_option;
-	attron(A_UNDERLINE);
-	mvinsstr(MENU_Y + (current_menu_option * MENU_Y_SPACE), MENU_X, opt->text);
-	attroff(A_UNDERLINE);
-}
+	case 'k':
+	case 'K':	menu_select_prev_option(menu); break;
 
-static void draw_menu(void)
-{
-	for (ptrdiff_t i = 0; i < total_menu_options; i++) {
-		if (i == current_menu_option)
-			draw_selected_option();
-		else
-			draw_option(i);
+	case ENTER_KEY: {
+		tui_current_state = menu_selected_option_state(menu);
+		tui_update = true;
+	} break;
 	}
 }
 
-static void draw_newly_selected_option(const ptrdiff_t prev)
+static void draw_add_menu(void)
 {
-	clear_line(MENU_Y + (prev * MENU_Y_SPACE));
-	draw_option(prev);
-
-	clear_line(MENU_Y + (current_menu_option * MENU_Y_SPACE));
-	draw_selected_option();
-
-	draw_border();
+	if (tui_update) {
+		clear();
+		draw_title("add information");
+		draw_menu(&tui_add_menu);
+		tui_update = false;
+	}
 }
 
-static inline void select_next_option(void)
+static void add_menu_iteration(void)
 {
-	const ptrdiff_t prev = current_menu_option;
-	current_menu_option = (current_menu_option + 1) % total_menu_options;
-	draw_newly_selected_option(prev);
-}
-
-static inline void select_prev_option(void)
-{
-	const ptrdiff_t prev = current_menu_option;
-
-	if (current_menu_option > 0)
-		current_menu_option--;
-	else
-		current_menu_option = total_menu_options - 1;
-
-	draw_newly_selected_option(prev);
+	draw_add_menu();
+	menu_iteration(&tui_add_menu);
 }
 
 static inline void draw_main_menu(void)
 {
 	if (tui_update) {
 		clear();
-		draw_title();
-		draw_menu();
+		draw_title("Hospital Management System");
+		draw_menu(&tui_main_menu);
 		draw_border();
 
 		tui_update = false;
 	}
 }
 
-static void handle_selected_option(void)
-{
-	tui_current_state = menu_options[current_menu_option].state;
-	tui_update = true;
-}
-
 static void main_menu_iteration(void)
 {
 	draw_main_menu();
-
-	switch (getch()) {
-	case 'q':	tui_exited = true; break;
-
-	case 'j':
-	case 'J':	select_next_option(); break;
-
-	case 'k':
-	case 'K':	select_prev_option(); break;
-
-	case ENTER_KEY:	handle_selected_option(); break;
-	}
+	menu_iteration(&tui_main_menu);
 }
 
 void tui_iteration(void)
 {
 	switch (tui_current_state) {
 	case TUI_EXIT:	tui_exited = true; break;
+	case TUI_ADD:	add_menu_iteration(); break;
 	default:	main_menu_iteration(); break;
 	}
 
