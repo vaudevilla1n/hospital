@@ -1,15 +1,8 @@
 #pragma once
 
-#include <stddef.h>
+#include "tui.h"
 
-enum tui_state {
-	TUI_MAIN_MENU,
-	TUI_ADD,
-	TUI_VIEW,
-	TUI_SEARCH,
-	TUI_EDIT,
-	TUI_EXIT,
-};
+#include <stddef.h>
 
 struct option {
 	enum tui_state state;
@@ -38,3 +31,4 @@ void menu_select_next_option(struct menu *menu);
 void menu_select_prev_option(struct menu *menu);
 
 enum tui_state menu_selected_option_state(const struct menu *menu);
+enum tui_state menu_iteration(struct menu *menu);

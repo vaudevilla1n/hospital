@@ -13,7 +13,7 @@ const struct option tui_main_menu_opts[] = {
 
 const struct option tui_add_menu_opts[] = {
 	{ TUI_ADD, "new patient record" },
-	{ TUI_ADD, "new appointment" },
+	{ TUI_ADD, "new doctor's appointment" },
 	{ TUI_MAIN_MENU, "back" },
 	{ TUI_EXIT, "exit" },
 };
@@ -23,8 +23,8 @@ struct menu tui_add_menu;
 
 static inline void init_menu(struct menu *m, const struct option *opts, const ptrdiff_t nopts)
 {
-	m->x = (COLS * 3/8);
-	m->y = (LINES * 3/10);
+	m->x = TUI_PAGE_X;
+	m->y = TUI_PAGE_Y;
 
 	m->space = 4;
 
@@ -94,4 +94,34 @@ enum tui_state menu_selected_option_state(const struct menu *menu)
 {
 	return menu->opts[menu->curr_opt].state;	
 }
+
+enum tui_state menu_iteration(struct menu *menu)
+{
+	enum tui_state state = TUI_NONE;
+
+	switch (getch()) {
+	case KEY_DOWN:
+	case 's':
+	case 'S':
+	case 'j':
+	case 'J':
+		menu_select_next_option(menu);
+		break;
+
+	case 'w':
+	case 'W':
+	case 'k':
+	case 'K':
+	case KEY_UP:
+		menu_select_prev_option(menu);
+		break;
+
+	case ENTER_KEY:
+		state = menu_selected_option_state(menu);
+		break;
+	}
+
+	return state;
+}
+
 
