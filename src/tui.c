@@ -40,31 +40,20 @@ void tui_init(void)
 	init_forms();
 }
 
-static void tui_update_screen(void)
-{
-	tui_update = false;
-	clear();
-}
-
-static void draw_border(void)
+void tui_draw_border(void)
 {
 	box(tui_window, ACS_VLINE, ACS_HLINE);
 }
 
-static void draw_title(const char *title)
+void tui_draw_title(const char *title)
 {
 	mvaddstr(TUI_TITLE_Y, TUI_TITLE_X, title);
 }
 
-static void draw_add_menu(void)
+static void tui_update_screen(void)
 {
-	if (tui_update) {
-		tui_update_screen();
-
-		draw_title("add information");
-		draw_menu(&tui_add_menu);
-		draw_border();
-	}
+	tui_update = false;
+	clear();
 }
 
 static void update_tui_state(const enum tui_state state)
@@ -73,61 +62,26 @@ static void update_tui_state(const enum tui_state state)
 	tui_update = true;
 }
 
-static void add_menu_iteration(void)
-{
-	draw_add_menu();
-
-	const enum tui_state state = menu_iteration(&tui_add_menu);
-	if (state != TUI_NONE)
-		update_tui_state(state);
-}
-
-static inline void draw_main_menu(void)
-{
-	if (tui_update) {
-		tui_update_screen();
-
-		draw_title("Hospital Management System");
-		draw_menu(&tui_main_menu);
-		draw_border();
-	}
-}
-
-static void main_menu_iteration(void)
-{
-	draw_main_menu();
-
-	const enum tui_state state = menu_iteration(&tui_main_menu);
-	if (state != TUI_NONE)
-		update_tui_state(state);
-}
-
-static void add_patient_form_iteration(void)
-{
-	if (tui_update) {
-		tui_update_screen();
-
-		draw_title("new patient information");
-		draw_form(&tui_add_patient_form);
-		draw_border();
-	}
-
-	const enum tui_state state = form_iteration(&tui_add_patient_form);
-	if (state != TUI_NONE)
-		update_tui_state(state);
-}
-
 void tui_iteration(void)
 {
+	const bool update = tui_update;
+
+	if (tui_update)
+		tui_update_screen();
+
+	enum tui_state state = TUI_NONE;
+
 	switch (tui_current_state) {
-	case TUI_EXIT:	tui_exited = true; break;
+	case TUI_EXIT:		tui_exited = true; break;
 
-	case TUI_ADD:		add_menu_iteration(); break;
-	case TUI_ADD_PATIENT:	add_patient_form_iteration(); break;
+	case TUI_ADD:		state = add_menu_iteration(update); break;
+	case TUI_ADD_PATIENT:	state = add_patient_form_iteration(update); break;
 
-	default:	main_menu_iteration(); break;
+	default:		state = main_menu_iteration(update); break;
 	}
 
+	if (state != TUI_NONE)
+		update_tui_state(state);
 }
 
 void tui_deinit(void)

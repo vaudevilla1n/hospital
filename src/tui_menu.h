@@ -25,10 +25,6 @@ extern struct menu tui_main_menu;
 extern struct menu tui_add_menu;
 
 void init_menus(void);
-void draw_menu(const struct menu *menu);
 
-void menu_select_next_option(struct menu *menu);
-void menu_select_prev_option(struct menu *menu);
-
-enum tui_state menu_selected_option_state(const struct menu *menu);
-enum tui_state menu_iteration(struct menu *menu);
+enum tui_state main_menu_iteration(const bool update);
+enum tui_state add_menu_iteration(const bool update);

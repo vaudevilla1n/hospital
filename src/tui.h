@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #define ENTER_KEY	'\n'
+#define ESCAPE_KEY	'\x1b'
 
 #define TUI_TITLE_X	(COLS * 1/10)
 #define TUI_TITLE_Y	(LINES * 1/10)
@@ -31,5 +32,8 @@ extern bool tui_exited;
 
 void tui_init(void);
 void tui_deinit(void);
+
+void tui_draw_border(void);
+void tui_draw_title(const char *title);
 
 void tui_iteration(void);

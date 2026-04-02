@@ -52,7 +52,7 @@ static void draw_selected_option(const struct menu *menu)
 	attroff(A_UNDERLINE);
 }
 
-void draw_menu(const struct menu *menu)
+static void draw_menu(const struct menu *menu)
 {
 	for (ptrdiff_t i = 0; i < menu->nopts; i++) {
 		if (i == menu->curr_opt)
@@ -68,7 +68,7 @@ static inline void clear_text(const int x, const int y, const ptrdiff_t len)
 		mvdelch(y, x + i);
 }
 
-void menu_select_next_option(struct menu *menu)
+static void menu_select_next_option(struct menu *menu)
 {
 	const ptrdiff_t prev = menu->curr_opt;
 	menu->curr_opt = (menu->curr_opt + 1) % menu->nopts;
@@ -77,7 +77,7 @@ void menu_select_next_option(struct menu *menu)
 	draw_selected_option(menu);
 }
 
-void menu_select_prev_option(struct menu *menu)
+static void menu_select_prev_option(struct menu *menu)
 {
 	const ptrdiff_t prev = menu->curr_opt;
 
@@ -90,12 +90,12 @@ void menu_select_prev_option(struct menu *menu)
 	draw_selected_option(menu);
 }
 
-enum tui_state menu_selected_option_state(const struct menu *menu)
+static enum tui_state menu_selected_option_state(const struct menu *menu)
 {
 	return menu->opts[menu->curr_opt].state;	
 }
 
-enum tui_state menu_iteration(struct menu *menu)
+static enum tui_state menu_iteration(struct menu *menu)
 {
 	enum tui_state state = TUI_NONE;
 
@@ -124,4 +124,24 @@ enum tui_state menu_iteration(struct menu *menu)
 	return state;
 }
 
+enum tui_state main_menu_iteration(const bool update)
+{
+	if (update) {
+		tui_draw_title("Hospital Management System");
+		draw_menu(&tui_main_menu);
+		tui_draw_border();
+	}
 
+	return menu_iteration(&tui_main_menu);
+}
+
+enum tui_state add_menu_iteration(const bool update)
+{
+	if (update) {
+		tui_draw_title("add information");
+		draw_menu(&tui_add_menu);
+		tui_draw_border();
+	}
+
+	return menu_iteration(&tui_add_menu);
+}
