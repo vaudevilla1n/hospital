@@ -5,6 +5,7 @@
 
 #define ENTER_KEY	'\n'
 #define ESCAPE_KEY	'\x1b'
+#define BACKSPACE_KEY	'\b'
 
 #define TUI_TITLE_X	(COLS * 1/10)
 #define TUI_TITLE_Y	(LINES * 1/10)

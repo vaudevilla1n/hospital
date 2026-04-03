@@ -3,6 +3,11 @@
 #include "tui.h"
 #include <stddef.h>
 
+#define FORM_ENTRY_INPUT_MAX	32
+
+#define FORM_ENTRY_TEXT_LEN	32
+#define FORM_ENTRY_DATE_LEN	8
+
 enum form_entry_type {
 	FORM_ENTRY_TEXT,
 	FORM_ENTRY_NUMBER,
@@ -13,6 +18,9 @@ struct form_entry {
 
 	ptrdiff_t label_len;
 	const char *label;
+
+	ptrdiff_t buf_len;
+	char buf[FORM_ENTRY_INPUT_MAX];
 };
 
 enum form_state {

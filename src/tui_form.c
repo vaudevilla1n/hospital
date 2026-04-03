@@ -4,18 +4,15 @@
 
 #include <ctype.h>
 
-#define FORM_TEXT_BOX_LEN	32
-
-struct form tui_add_patient_form;
+#define FORM_ENTRY(t, label)	{ (t), lit(label), 0, { 0 } }
 
 struct form_entry tui_add_patient_form_entries[] = {
-	{ FORM_ENTRY_TEXT, lit("first") },
-	{ FORM_ENTRY_TEXT, lit("middle") },
-	{ FORM_ENTRY_TEXT, lit("last") },
+	FORM_ENTRY(FORM_ENTRY_TEXT, "first"),
+	FORM_ENTRY(FORM_ENTRY_TEXT, "middle"),
+	FORM_ENTRY(FORM_ENTRY_TEXT, "last"),
 };
 
-char form_input_buffer[FORM_TEXT_BOX_LEN];
-ptrdiff_t form_input_buffer_len = 0;
+struct form tui_add_patient_form;
 
 static void init_form(struct form *form)
 {
@@ -36,9 +33,10 @@ void init_forms(void)
 	init_form(&tui_add_patient_form);
 }
 
-static void draw_text_entry(void)
+static void draw_text_entry(const struct form_entry *entry)
 {
-	for (int i = 0; i < FORM_TEXT_BOX_LEN; i++)
+	addnstr(entry->buf, entry->buf_len);
+	for (int i = entry->buf_len; i < FORM_ENTRY_TEXT_LEN; i++)
 		addch('_');
 }
 
@@ -57,7 +55,7 @@ static void draw_form_entry(const struct form *form, const ptrdiff_t entry)
 
 	addstr(": ");
 
-	draw_text_entry();
+	draw_text_entry(form->entries + entry);
 }
 
 static void draw_form(const struct form *form)
@@ -88,15 +86,14 @@ static void form_select_prev_option(struct form *form)
 	draw_form_entry(form, form->curr_entry);
 }
 
-static inline void move_to_form_entry_end(struct form *form) {
-	const struct form_entry *entry = form->entries + form->curr_entry;
-
+static void form_entry_append(const struct form *form, const struct form_entry *entry, const char c)
+{
 	const int label_off = form->x + entry->label_len + lengthof(": ");
 
 	const int y = form->y + (form->curr_entry * form->space);
-	const int x = label_off + form_input_buffer_len;
+	const int x = label_off + entry->buf_len;
 
-	move(y, x);
+	mvaddch(y, x, c);
 }
 
 static void enter_read_mode(struct form *form)
@@ -104,40 +101,47 @@ static void enter_read_mode(struct form *form)
 	form->state = FORM_READ;
 }
 
-static void exit_read_mode(struct form *form)
+
+static void exit_read_mode(struct form *form, struct form_entry *entry)
 {
 	form->state = FORM_IDLE;
 
-	if (form_input_buffer_len + 1 < FORM_TEXT_BOX_LEN) {
-		move_to_form_entry_end(form);
-
+	if (entry->buf_len + 1 < FORM_ENTRY_TEXT_LEN) {
 		attroff(A_BOLD);
-		addch('_');
+		form_entry_append(form, entry, '_');
 	}
-
-	form_input_buffer_len = 0;
 }
 
 static void form_read_iteration(struct form *form)
 {
-	if (form_input_buffer_len + 1 <= FORM_TEXT_BOX_LEN) {
-		move_to_form_entry_end(form);
+	struct form_entry *entry = form->entries + form->curr_entry;
 
+	if (entry->buf_len + 1 <= FORM_ENTRY_TEXT_LEN) {
 		attron(A_BOLD);
-		addch('I');
+		form_entry_append(form, entry, 'I');
 		attroff(A_BOLD);
 	}
 
 	const int c = getch();
 
-	if (c == ESCAPE_KEY) {
-		exit_read_mode(form);
-	} else if (isalpha(c) && form_input_buffer_len + 1 <= FORM_TEXT_BOX_LEN) {
-		move_to_form_entry_end(form);
+	switch (c) {
+	case ESCAPE_KEY:
+		exit_read_mode(form, entry);
+		break;
 
-		addch(c);
+	case BACKSPACE_KEY: {
+		if (entry->buf_len > 0) {
+			form_entry_append(form, entry, '_');
+			entry->buf_len--;
+		}
+	} break;
 
-		form_input_buffer[form_input_buffer_len++] = c;
+	default: {
+		if (isalpha(c) && entry->buf_len + 1 <= FORM_ENTRY_TEXT_LEN) {
+			form_entry_append(form, entry, c);
+			entry->buf[entry->buf_len++] = c;
+		}
+	}
 	}
 }
 
