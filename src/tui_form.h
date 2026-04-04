@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tui.h"
+
 #include <stddef.h>
 
 #define FORM_ENTRY_INPUT_MAX	32

@@ -129,6 +129,7 @@ static void form_read_iteration(struct form *form)
 		exit_read_mode(form, entry);
 		break;
 
+	case DELETE_KEY:
 	case BACKSPACE_KEY: {
 		if (entry->buf_len > 0) {
 			form_entry_append(form, entry, '_');

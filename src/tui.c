@@ -62,6 +62,11 @@ static void update_tui_state(const enum tui_state state)
 	tui_update = true;
 }
 
+static enum tui_state add_patient_iteration(const bool update)
+{
+	return add_patient_form_iteration(update);
+}
+
 void tui_iteration(void)
 {
 	const bool update = tui_update;
@@ -75,7 +80,7 @@ void tui_iteration(void)
 	case TUI_EXIT:		tui_exited = true; break;
 
 	case TUI_ADD:		state = add_menu_iteration(update); break;
-	case TUI_ADD_PATIENT:	state = add_patient_form_iteration(update); break;
+	case TUI_ADD_PATIENT:	state = add_patient_iteration(update); break;
 
 	default:		state = main_menu_iteration(update); break;
 	}

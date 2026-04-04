@@ -1,4 +1,5 @@
 #include "tui_menu.h"
+
 #include "util.h"
 
 #include <curses.h>
@@ -6,8 +7,8 @@
 const struct option tui_main_menu_opts[] = {
 	{ TUI_ADD, "add information" },
 	{ TUI_VIEW, "view information" },
-	{ TUI_SEARCH, "search" },
 	{ TUI_EDIT, "edit information" },
+	{ TUI_SEARCH, "search" },
 	{ TUI_EXIT, "exit" },
 };
 
