@@ -6,42 +6,44 @@
 #include <ctype.h>
 #include <curses.h>
 
-#define BUTTON(text, state)	{ OPT_BUTTON, lit(text), { .button = (state) } }
-#define FORM(text, type)	{ (type), lit(text), { .form = { 0, { 0 } } } }
+#define BUTTON(space, text, state)	{ (space), OPT_BUTTON, lit(text), { .button = (state) } }
+#define FORM(space, text, type)		{ (space), (type), lit(text), { .form = { 0, { 0 } } } }
 
 struct option tui_main_menu_opts[] = {
-	BUTTON("add information",	TUI_ADD),
-	BUTTON("view information",	TUI_VIEW),
-	BUTTON("edit information",	TUI_EDIT),
-	BUTTON("search",		TUI_SEARCH),
-	BUTTON("exit",			TUI_EXIT),
+	BUTTON(0, "add information",	TUI_ADD),
+	BUTTON(0, "view information",	TUI_VIEW),
+	BUTTON(0, "edit information",	TUI_EDIT),
+	BUTTON(0, "search",		TUI_SEARCH),
+	BUTTON(0, "exit",		TUI_EXIT),
 };
 
 struct option tui_add_menu_opts[] = {
-	BUTTON("new patient record",		TUI_ADD_PATIENT),
-	BUTTON("new doctor's appointment",	TUI_ADD),
-	BUTTON("back",				TUI_MAIN_MENU),
-	BUTTON("exit",				TUI_EXIT),
+	BUTTON(0, "new patient record",		TUI_ADD_PATIENT),
+	BUTTON(0, "new doctor's appointment",	TUI_ADD),
+	BUTTON(0, "back",			TUI_MAIN_MENU),
+	BUTTON(0, "exit",			TUI_EXIT),
 };
 
 struct option tui_add_patient_menu_opts[] = {
-	FORM("first",	OPT_FORM_TEXT),
-	FORM("middle",	OPT_FORM_TEXT),
-	FORM("last",	OPT_FORM_TEXT),
-	BUTTON("back",	TUI_ADD),
+	FORM(0, "first",		OPT_FORM_TEXT),
+	FORM(0, "middle",		OPT_FORM_TEXT),
+	FORM(0, "last",			OPT_FORM_TEXT),
+	FORM(0, "DOB",			OPT_FORM_DATE),
+	BUTTON(TUI_SPACE_Y, "back",	TUI_ADD),
 };
 
 struct menu tui_main_menu;
 struct menu tui_add_menu;
 struct menu tui_add_patient_menu;
 
-static inline void init_menu(const int x, const int y, const char *title,
-		struct menu *m, struct option *opts, const ptrdiff_t nopts)
+static inline void init_menu(struct menu *m, const char *title,
+		const int x, const int y, const int space,
+		struct option *opts, const ptrdiff_t nopts)
 {
 	m->x = x;
 	m->y = y;
 
-	m->space = TUI_SPACE_Y;
+	m->space = space;
 
 	m->title = title;
 
@@ -52,22 +54,36 @@ static inline void init_menu(const int x, const int y, const char *title,
 
 void init_menus(void)
 {
-	init_menu(TUI_PAGE_X, TUI_PAGE_Y, "Hospital Management System",
-			&tui_main_menu, tui_main_menu_opts, countof(tui_main_menu_opts));
+	init_menu(&tui_main_menu,
+			"Hospital Management System",
+			TUI_PAGE_X, TUI_PAGE_Y, TUI_SPACE_Y,
+			tui_main_menu_opts, countof(tui_main_menu_opts));
 
-	init_menu(TUI_PAGE_X, TUI_PAGE_Y, "add information",
-			&tui_add_menu, tui_add_menu_opts, countof(tui_add_menu_opts));
+	init_menu(&tui_add_menu,
+			"add information",
+			TUI_PAGE_X, TUI_PAGE_Y, TUI_SPACE_Y,
+			tui_add_menu_opts, countof(tui_add_menu_opts));
 
-	init_menu(TUI_PAGE_X * 1/2, TUI_PAGE_Y, "new patient information",
-			&tui_add_patient_menu, tui_add_patient_menu_opts, countof(tui_add_patient_menu_opts));
+	init_menu(&tui_add_patient_menu,
+			"new patient information",
+			TUI_PAGE_X * 1/2, TUI_PAGE_Y, TUI_SPACE_Y / 2,
+			tui_add_patient_menu_opts, countof(tui_add_patient_menu_opts));
 }
 
-static void draw_text_form(const struct option *opt)
+static void draw_form(const struct option *opt)
 {
-	addstr(": ");
+	int len = 0;
+
+	switch (opt->type) {
+	case OPT_FORM_TEXT:	len = FORM_TEXT_LEN; break;
+	case OPT_FORM_DATE:	len = FORM_DATE_LEN; break;
+
+	default:		len = FORM_INPUT_MAX;
+	}
 
 	addnstr(opt->as.form.buf, opt->as.form.buflen);
-	for (int i = opt->as.form.buflen; i < FORM_TEXT_LEN; i++)
+
+	for (int i = opt->as.form.buflen; i < len; i++)
 		addch('_');
 }
 
@@ -75,7 +91,7 @@ static void draw_option(const struct menu *menu, const ptrdiff_t i)
 {
 	const struct option *opt = menu->opts + i;
 
-	const int y = menu->y + (menu->space * i);
+	const int y = menu->y + (menu->space * i) + opt->space;
 	const int x = menu->x;
 
 	if (i == menu->curr_opt) {
@@ -86,13 +102,9 @@ static void draw_option(const struct menu *menu, const ptrdiff_t i)
 		mvaddnstr(y, x, opt->text, opt->textlen);
 	}
 
-	switch (opt->type) {
-	case OPT_FORM_TEXT:
-	case OPT_FORM_NUMBER: {
-		draw_text_form(opt);
-	} break;
-
-	default:		break;
+	if (opt->type != OPT_BUTTON) {
+		addstr(": ");
+		draw_form(opt);
 	}
 }
 
@@ -135,43 +147,67 @@ static void draw_input_cursor(const int x, const int y)
 	attroff(A_BOLD);
 }
 
+static inline void append_input(const enum option_type type, struct form *form,
+		const int x, const int y, const char c)
+{
+	bool append = false;
+
+	switch (type) {
+	case OPT_FORM_TEXT:	append = (isalpha(c) && form->buflen + 1 <= FORM_TEXT_LEN); break;
+	case OPT_FORM_DATE:	append = (isdigit(c) && form->buflen + 1 <= FORM_DATE_LEN); break;
+
+	default:	__builtin_unreachable();
+	}
+
+	if (append) {
+		mvaddch(y, x, c);
+		form->buf[form->buflen++] = c;
+	}
+}
+
 static enum tui_state read_form_input(const struct menu *menu, struct option *opt)
 {
+	int maxlen = 0;
+
+	switch (opt->type) {
+	case OPT_FORM_TEXT:	maxlen = FORM_TEXT_LEN; break;
+	case OPT_FORM_DATE:	maxlen = FORM_DATE_LEN; break;
+
+	default:	__builtin_unreachable();
+	}
+
 	const int text_off = menu->x + opt->textlen + lengthof(": ");
 	const int y = menu->y + (menu->curr_opt * menu->space);
+	int x;
 
 	struct form *form = &opt->as.form;
 
 	for (;;) {
-		const int x = text_off + form->buflen;
+		x = text_off + form->buflen;
 
 		draw_input_cursor(x, y);
 
 		const int c = getch();
 
-		if (c == ESCAPE_KEY || c == ENTER_KEY){ 
-			mvaddch(y, x, '_');
+		if (c == ESCAPE_KEY || c == ENTER_KEY)
 			break;
-		}
 
 		switch (c) {
 		case '-':
 		case DELETE_KEY:
 		case BACKSPACE_KEY: {
 			if (form->buflen > 0) {
-				mvaddch(y, x, '_');
+				mvaddch(y, x, form->buflen == maxlen ? ' ' : '_');
 				form->buflen--;
 			}
 		} break;
 
-		default: {
-			if (isalpha(c) && form->buflen + 1 <= FORM_TEXT_LEN) {
-				mvaddch(y, x, c);
-				form->buf[form->buflen++] = c;
-			}
-		}
+		default:	append_input(opt->type, form, x, y, c);
 		}
 	}
+
+	if (form->buflen < maxlen)
+		mvaddch(y, x, form->buflen == maxlen ? ' ' : '_');
 
 	return TUI_NONE;
 }

@@ -21,10 +21,12 @@ struct form {
 enum option_type {
 	OPT_BUTTON,
 	OPT_FORM_TEXT,
-	OPT_FORM_NUMBER,
+	OPT_FORM_DATE,
 };
 
 struct option {
+	const int space;
+
 	enum option_type type;	
 
 	ptrdiff_t textlen;
