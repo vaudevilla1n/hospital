@@ -7,39 +7,39 @@
 #include <curses.h>
 
 #define BUTTON(text, state)	{ OPT_BUTTON, lit(text), { .button = (state) } }
-#define FORM(type, text)	{ (type), lit(text), { .form = { 0, { 0 } } } }
+#define FORM(text, type)	{ (type), lit(text), { .form = { 0, { 0 } } } }
 
 struct option tui_main_menu_opts[] = {
-	BUTTON("add information", TUI_ADD),
-	BUTTON("view information", TUI_VIEW),
-	BUTTON("edit information", TUI_EDIT),
-	BUTTON("search", TUI_SEARCH),
-	BUTTON("exit", TUI_EXIT),
+	BUTTON("add information",	TUI_ADD),
+	BUTTON("view information",	TUI_VIEW),
+	BUTTON("edit information",	TUI_EDIT),
+	BUTTON("search",		TUI_SEARCH),
+	BUTTON("exit",			TUI_EXIT),
 };
 
 struct option tui_add_menu_opts[] = {
-	BUTTON("new patient record", TUI_ADD_PATIENT),
-	BUTTON("new doctor's appointment", TUI_ADD),
-	BUTTON("back", TUI_MAIN_MENU),
-	BUTTON("exit", TUI_EXIT),
+	BUTTON("new patient record",		TUI_ADD_PATIENT),
+	BUTTON("new doctor's appointment",	TUI_ADD),
+	BUTTON("back",				TUI_MAIN_MENU),
+	BUTTON("exit",				TUI_EXIT),
 };
 
 struct option tui_add_patient_menu_opts[] = {
-	FORM(OPT_FORM_TEXT, "first"),
-	FORM(OPT_FORM_TEXT, "middle"),
-	FORM(OPT_FORM_TEXT, "last"),
-	BUTTON("back", TUI_ADD),
-	BUTTON("exit", TUI_EXIT),
+	FORM("first",	OPT_FORM_TEXT),
+	FORM("middle",	OPT_FORM_TEXT),
+	FORM("last",	OPT_FORM_TEXT),
+	BUTTON("back",	TUI_ADD),
 };
 
 struct menu tui_main_menu;
 struct menu tui_add_menu;
 struct menu tui_add_patient_menu;
 
-static inline void init_menu(struct menu *m, const char *title, struct option *opts, const ptrdiff_t nopts)
+static inline void init_menu(const int x, const int y, const char *title,
+		struct menu *m, struct option *opts, const ptrdiff_t nopts)
 {
-	m->x = TUI_PAGE_X;
-	m->y = TUI_PAGE_Y;
+	m->x = x;
+	m->y = y;
 
 	m->space = TUI_SPACE_Y;
 
@@ -52,17 +52,14 @@ static inline void init_menu(struct menu *m, const char *title, struct option *o
 
 void init_menus(void)
 {
-	init_menu(&tui_main_menu,
-			"Hospital Management System",
-			tui_main_menu_opts, countof(tui_main_menu_opts));
+	init_menu(TUI_PAGE_X, TUI_PAGE_Y, "Hospital Management System",
+			&tui_main_menu, tui_main_menu_opts, countof(tui_main_menu_opts));
 
-	init_menu(&tui_add_menu,
-			"add information",
-			tui_add_menu_opts, countof(tui_add_menu_opts));
+	init_menu(TUI_PAGE_X, TUI_PAGE_Y, "add information",
+			&tui_add_menu, tui_add_menu_opts, countof(tui_add_menu_opts));
 
-	init_menu(&tui_add_patient_menu,
-			"new patient information",
-			tui_add_patient_menu_opts, countof(tui_add_patient_menu_opts));
+	init_menu(TUI_PAGE_X * 1/2, TUI_PAGE_Y, "new patient information",
+			&tui_add_patient_menu, tui_add_patient_menu_opts, countof(tui_add_patient_menu_opts));
 }
 
 static void draw_text_form(const struct option *opt)

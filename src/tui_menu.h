@@ -4,11 +4,15 @@
 
 #include <stddef.h>
 
-#define FORM_INPUT_MAX	32
-
-#define FORM_TEXT_LEN	32
+#define FORM_TEXT_LEN	64
 #define FORM_DATE_LEN	8
 
+#define FORM_INPUT_MAX	FORM_TEXT_LEN
+
+/*
+	a union of a 32 byte buffer and a 4 byte enum is kinda nuts
+	however, i dont really care
+*/
 struct form {
 	ptrdiff_t buflen;
 	char buf[FORM_INPUT_MAX];
