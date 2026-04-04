@@ -2,7 +2,6 @@
 
 #include "util.h"
 #include "tui_menu.h"
-#include "tui_form.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -37,7 +36,6 @@ void tui_init(void)
 	curses_assert(keypad(tui_window, TRUE), "couldn't set keypad mode");
 
 	init_menus();
-	init_forms();
 }
 
 void tui_draw_border(void)
@@ -62,11 +60,6 @@ static void update_tui_state(const enum tui_state state)
 	tui_update = true;
 }
 
-static enum tui_state add_patient_iteration(const bool update)
-{
-	return add_patient_form_iteration(update);
-}
-
 void tui_iteration(void)
 {
 	const bool update = tui_update;
@@ -79,10 +72,10 @@ void tui_iteration(void)
 	switch (tui_current_state) {
 	case TUI_EXIT:		tui_exited = true; break;
 
-	case TUI_ADD:		state = add_menu_iteration(update); break;
-	case TUI_ADD_PATIENT:	state = add_patient_iteration(update); break;
+	case TUI_ADD:		state = menu_iteration(&tui_add_menu,  update); break;
+	case TUI_ADD_PATIENT:	state = menu_iteration(&tui_add_patient_menu, update); break;
 
-	default:		state = main_menu_iteration(update); break;
+	default:		state = menu_iteration(&tui_main_menu, update); break;
 	}
 
 	if (state != TUI_NONE)
