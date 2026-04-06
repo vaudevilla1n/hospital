@@ -14,7 +14,7 @@
 #define TUI_PAGE_X	(COLS * 3/8)
 #define TUI_PAGE_Y	(LINES * 3/10)
 
-#define TUI_SPACE_Y	4
+#define TUI_SPACE	4
 
 enum tui_state {
 	TUI_NONE,
@@ -29,6 +29,8 @@ enum tui_state {
 	TUI_EDIT,
 	TUI_EXIT,
 };
+
+#define TUI_TOTAL_STATES	TUI_EXIT
 
 extern bool tui_exited;
 

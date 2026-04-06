@@ -25,7 +25,8 @@ enum option_type {
 };
 
 struct option {
-	const int space;
+	const int x;
+	const int y;
 
 	enum option_type type;	
 
@@ -52,9 +53,7 @@ struct menu {
 	struct option *opts;
 };
 
-extern struct menu tui_main_menu;
-extern struct menu tui_add_menu;
-extern struct menu tui_add_patient_menu;
+extern struct menu tui_menus[TUI_TOTAL_STATES];
 
 void init_menus(void);
 

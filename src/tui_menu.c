@@ -6,35 +6,42 @@
 #include <ctype.h>
 #include <curses.h>
 
-#define BUTTON(space, text, state)	{ (space), OPT_BUTTON, lit(text), { .button = (state) } }
-#define FORM(space, text, type)		{ (space), (type), lit(text), { .form = { 0, { 0 } } } }
+#define BUTTON(space_x, space_y, text, state)	\
+	{ (space_x), (space_y), OPT_BUTTON, lit(text), { .button = (state) } }
+
+#define FORM(space_x, space_y, text, type)	\
+	{ (space_x), (space_y), (type), lit(text), { .form = { 0, { 0 } } } }
 
 struct option tui_main_menu_opts[] = {
-	BUTTON(0, "add information",	TUI_ADD),
-	BUTTON(0, "view information",	TUI_VIEW),
-	BUTTON(0, "edit information",	TUI_EDIT),
-	BUTTON(0, "search",		TUI_SEARCH),
-	BUTTON(0, "exit",		TUI_EXIT),
+	BUTTON(0, 0, "add information",		TUI_ADD),
+	BUTTON(0, 0, "view information",	TUI_VIEW),
+	BUTTON(0, 0, "edit information",	TUI_EDIT),
+	BUTTON(0, 0, "search",			TUI_SEARCH),
+	BUTTON(0, 0, "exit",			TUI_EXIT),
+};
+
+struct option tui_search_menu_opts[] = {
+	FORM(0, 0, "search", 			OPT_FORM_TEXT),
+	BUTTON(FORM_INPUT_MAX * 1/2, 0, "back",	TUI_MAIN_MENU),
+	BUTTON(FORM_INPUT_MAX * 1/2, 0, "exit",	TUI_EXIT),
 };
 
 struct option tui_add_menu_opts[] = {
-	BUTTON(0, "new patient record",		TUI_ADD_PATIENT),
-	BUTTON(0, "new doctor's appointment",	TUI_ADD),
-	BUTTON(0, "back",			TUI_MAIN_MENU),
-	BUTTON(0, "exit",			TUI_EXIT),
+	BUTTON(0, 0, "new patient record",		TUI_ADD_PATIENT),
+	BUTTON(0, 0, "new doctor's appointment",	TUI_ADD),
+	BUTTON(0, 0, "back",				TUI_MAIN_MENU),
+	BUTTON(0, 0, "exit",				TUI_EXIT),
 };
 
 struct option tui_add_patient_menu_opts[] = {
-	FORM(0, "first",		OPT_FORM_TEXT),
-	FORM(0, "middle",		OPT_FORM_TEXT),
-	FORM(0, "last",			OPT_FORM_TEXT),
-	FORM(0, "DOB",			OPT_FORM_DATE),
-	BUTTON(TUI_SPACE_Y, "back",	TUI_ADD),
+	FORM(0, 0, "first",		OPT_FORM_TEXT),
+	FORM(0, 0, "middle",		OPT_FORM_TEXT),
+	FORM(0, 0, "last",		OPT_FORM_TEXT),
+	FORM(0, 0, "DOB",		OPT_FORM_DATE),
+	BUTTON(TUI_SPACE, 0, "back",	TUI_ADD),
 };
 
-struct menu tui_main_menu;
-struct menu tui_add_menu;
-struct menu tui_add_patient_menu;
+struct menu tui_menus[TUI_TOTAL_STATES];
 
 static inline void init_menu(struct menu *m, const char *title,
 		const int x, const int y, const int space,
@@ -54,20 +61,25 @@ static inline void init_menu(struct menu *m, const char *title,
 
 void init_menus(void)
 {
-	init_menu(&tui_main_menu,
+	init_menu(&tui_menus[TUI_MAIN_MENU],
 			"Hospital Management System",
-			TUI_PAGE_X, TUI_PAGE_Y, TUI_SPACE_Y,
+			TUI_PAGE_X, TUI_PAGE_Y, TUI_SPACE,
 			tui_main_menu_opts, countof(tui_main_menu_opts));
 
-	init_menu(&tui_add_menu,
+	init_menu(&tui_menus[TUI_ADD],
 			"add information",
-			TUI_PAGE_X, TUI_PAGE_Y, TUI_SPACE_Y,
+			TUI_PAGE_X, TUI_PAGE_Y, TUI_SPACE,
 			tui_add_menu_opts, countof(tui_add_menu_opts));
 
-	init_menu(&tui_add_patient_menu,
+	init_menu(&tui_menus[TUI_ADD_PATIENT],
 			"new patient information",
-			TUI_PAGE_X * 1/2, TUI_PAGE_Y, TUI_SPACE_Y / 2,
+			TUI_PAGE_X * 1/2, TUI_PAGE_Y, TUI_SPACE * 1/2,
 			tui_add_patient_menu_opts, countof(tui_add_patient_menu_opts));
+
+	init_menu(&tui_menus[TUI_SEARCH],
+			"search",
+			TUI_PAGE_X * 1/2, TUI_PAGE_Y, TUI_SPACE,
+			tui_search_menu_opts, countof(tui_search_menu_opts));
 }
 
 static void draw_form(const struct option *opt)
@@ -91,8 +103,8 @@ static void draw_option(const struct menu *menu, const ptrdiff_t i)
 {
 	const struct option *opt = menu->opts + i;
 
-	const int y = menu->y + (menu->space * i) + opt->space;
-	const int x = menu->x;
+	const int y = menu->y + (menu->space * i) + opt->y;
+	const int x = menu->x + opt->x;
 
 	if (i == menu->curr_opt) {
 		attron(A_UNDERLINE);
@@ -176,8 +188,8 @@ static enum tui_state read_form_input(const struct menu *menu, struct option *op
 	default:	__builtin_unreachable();
 	}
 
-	const int text_off = menu->x + opt->textlen + lengthof(": ");
-	const int y = menu->y + (menu->curr_opt * menu->space);
+	const int text_off = menu->x + + opt->x + opt->textlen + lengthof(": ");
+	const int y = menu->y + opt->y + (menu->curr_opt * menu->space);
 	int x;
 
 	struct form *form = &opt->as.form;

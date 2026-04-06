@@ -67,16 +67,13 @@ void tui_iteration(void)
 	if (tui_update)
 		tui_update_screen();
 
-	enum tui_state state = TUI_NONE;
-
-	switch (tui_current_state) {
-	case TUI_EXIT:		tui_exited = true; break;
-
-	case TUI_ADD:		state = menu_iteration(&tui_add_menu,  update); break;
-	case TUI_ADD_PATIENT:	state = menu_iteration(&tui_add_patient_menu, update); break;
-
-	default:		state = menu_iteration(&tui_main_menu, update); break;
+	if (tui_current_state == TUI_EXIT) {
+		tui_exited = true;
+		return;
 	}
+
+	struct menu *current_menu = &tui_menus[tui_current_state];
+	const enum tui_state state = menu_iteration(current_menu, update);
 
 	if (state != TUI_NONE)
 		update_tui_state(state);
