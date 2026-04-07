@@ -8,14 +8,6 @@
 #define BACKSPACE_KEY	'\b'
 #define DELETE_KEY	'\x7f'
 
-#define TUI_TITLE_X	(COLS * 1/10)
-#define TUI_TITLE_Y	(LINES * 1/10)
-
-#define TUI_PAGE_X	(COLS * 3/8)
-#define TUI_PAGE_Y	(LINES * 3/10)
-
-#define TUI_SPACE	4
-
 enum tui_state {
 	TUI_NONE,
 
@@ -23,6 +15,9 @@ enum tui_state {
 
 	TUI_ADD,
 	TUI_ADD_PATIENT,
+	TUI_ADD_APPOINTMENT,
+
+	TUI_ADD_SAVE,
 
 	TUI_VIEW,
 	TUI_SEARCH,
@@ -33,11 +28,9 @@ enum tui_state {
 #define TUI_TOTAL_STATES	TUI_EXIT
 
 extern bool tui_exited;
+extern WINDOW *tui_window;
 
 void tui_init(void);
 void tui_deinit(void);
-
-void tui_draw_border(void);
-void tui_draw_title(const char *title);
 
 void tui_iteration(void);

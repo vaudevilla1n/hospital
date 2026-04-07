@@ -1,5 +1,6 @@
 #include "tui.h"
 
+#include "file.h"
 #include "util.h"
 #include "tui_menu.h"
 
@@ -38,16 +39,6 @@ void tui_init(void)
 	init_menus();
 }
 
-void tui_draw_border(void)
-{
-	box(tui_window, ACS_VLINE, ACS_HLINE);
-}
-
-void tui_draw_title(const char *title)
-{
-	mvaddstr(TUI_TITLE_Y, TUI_TITLE_X, title);
-}
-
 static void tui_update_screen(void)
 {
 	tui_update = false;
@@ -58,6 +49,12 @@ static void update_tui_state(const enum tui_state state)
 {
 	tui_current_state = state;
 	tui_update = true;
+}
+
+static inline enum tui_state save_forms(const struct menu *menu)
+{
+	file_save_forms(menu);
+	return TUI_ADD;
 }
 
 void tui_iteration(void)
@@ -73,10 +70,18 @@ void tui_iteration(void)
 	}
 
 	struct menu *current_menu = &tui_menus[tui_current_state];
-	const enum tui_state state = menu_iteration(current_menu, update);
+	enum tui_state state = menu_iteration(current_menu, update);
 
-	if (state != TUI_NONE)
+	switch (state) {
+	case TUI_NONE:
+		break;
+	case TUI_ADD_SAVE:
+		state = save_forms(current_menu);
 		update_tui_state(state);
+		break;
+	default:
+		update_tui_state(state);
+	}
 }
 
 void tui_deinit(void)
