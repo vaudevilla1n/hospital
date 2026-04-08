@@ -48,6 +48,8 @@ struct option {
 bool is_form(const struct option *opt);
 
 struct menu {
+	int y;
+
 	ptrdiff_t curr_opt;
 	ptrdiff_t nopts;
 	struct option opts[MAX_OPTS];

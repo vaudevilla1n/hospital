@@ -20,40 +20,51 @@
 
 struct menu tui_menus[TUI_TOTAL_STATES];
 
-static inline struct option *new_option(struct menu *menu, const int x, const int y,
-		const ptrdiff_t textlen, const char *text) 
+static inline struct option *new_option(struct menu *menu, const ptrdiff_t textlen, const char *text) 
 {
 	struct option *opt = menu->opts + menu->nopts++;
 
-	opt->x = x;
-	opt->y = y;
 	opt->text = text;
 	opt->textlen = textlen;
 
 	return opt;
 }
 
-static inline void title(struct menu *menu, const int x, const int y,
-		const ptrdiff_t textlen, const char *text) 
+static inline void title(struct menu *menu, const ptrdiff_t textlen, const char *text) 
 {
-	struct option *opt = new_option(menu, x, y, textlen, text);
+	struct option *opt = new_option(menu, textlen, text);
 
 	opt->type = OPT_TITLE;
+	opt->x = TUI_TITLE_X;
+	opt->y = TUI_TITLE_Y + (menu->nopts - 1) * TUI_SPACE;
 }
 
-static inline void button(struct menu *menu, const int x, const int y,
-		const ptrdiff_t textlen, const char *text, const enum tui_state state) 
+static inline void button(struct menu *menu, const ptrdiff_t textlen, const char *text,
+		const enum tui_state state) 
 {
-	struct option *opt = new_option(menu, x, y, textlen, text);
+	struct option *opt = new_option(menu, textlen, text);
 
 	opt->type = OPT_BUTTON;
 	opt->as.button = state;
+	opt->x = TUI_PAGE_X;
+	opt->y = menu->y + (menu->nopts - 1) * TUI_SPACE;
 }
 
-static inline void form(struct menu *menu, const int x, const int y,
-		const ptrdiff_t textlen, const char *text, const enum option_type type) 
+static inline void center_button(struct menu *menu, const ptrdiff_t textlen, const char *text,
+		const enum tui_state state) 
 {
-	struct option *opt = new_option(menu, x, y, textlen, text);
+	struct option *opt = new_option(menu, textlen, text);
+
+	opt->type = OPT_BUTTON;
+	opt->as.button = state;
+	opt->x = TUI_FORM_X + FORM_INPUT_MAX * 1/2;
+	opt->y = menu->y + (menu->nopts - 1) * TUI_SPACE;
+}
+
+static inline void form(struct menu *menu, const ptrdiff_t textlen, const char *text,
+		const enum option_type type) 
+{
+	struct option *opt = new_option(menu, textlen, text);
 
 	opt->type = type;
 	switch (type) {
@@ -63,63 +74,95 @@ static inline void form(struct menu *menu, const int x, const int y,
 
 	default:	__builtin_unreachable();
 	}
+
+	opt->x = TUI_FORM_X;
+	opt->y = menu->y + (menu->nopts - 1) * TUI_SPACE;
+}
+
+static inline void init_menu(struct menu *menu, const int y, const ptrdiff_t start_opt)
+{
+	menu->y = y;
+	menu->curr_opt = start_opt;
+}
+
+static inline void init_main_menu(void)
+{
+	struct menu *main_menu = &tui_menus[TUI_MAIN_MENU];
+	init_menu(main_menu, TUI_PAGE_Y, 1);
+
+	title(main_menu, lit("Hospital Management System"));
+	button(main_menu, lit("add information"), TUI_ADD);
+	button(main_menu, lit("view information"), TUI_MAIN_MENU);
+	button(main_menu, lit("edit information"), TUI_MAIN_MENU);
+	button(main_menu, lit("search"), TUI_SEARCH);
+	button(main_menu, lit("exit"), TUI_EXIT);
+}
+
+static inline void init_add_menu(void)
+{
+	struct menu *add_menu = &tui_menus[TUI_ADD];
+	init_menu(add_menu, TUI_PAGE_Y, 1);
+
+	title(add_menu, lit("add information"));
+	button(add_menu, lit("new patient record"), TUI_ADD_PATIENT);
+	button(add_menu, lit("new doctor's appointment"), TUI_ADD_APPOINTMENT);
+	button(add_menu, lit("back"), TUI_MAIN_MENU);
+	button(add_menu, lit("exit"), TUI_EXIT);
+}
+
+static inline void init_add_patient_menu(void)
+{
+	struct menu *add_patient_menu = &tui_menus[TUI_ADD_PATIENT];
+	init_menu(add_patient_menu, TUI_PAGE_Y, 1);
+
+	title(add_patient_menu, lit("new patient"));
+	form(add_patient_menu, lit("first"), OPT_FORM_TEXT);
+	form(add_patient_menu, lit("last"), OPT_FORM_TEXT);
+	form(add_patient_menu, lit("DOB"), OPT_FORM_DATE);
+	center_button(add_patient_menu, lit("save"), TUI_ADD_SAVE);
+	center_button(add_patient_menu, lit("back"), TUI_ADD);
+}
+
+static inline void init_add_appointment_menu(void)
+{
+	struct menu *add_appointment_menu = &tui_menus[TUI_ADD_APPOINTMENT];
+	init_menu(add_appointment_menu, TUI_TITLE_Y, 1);
+
+	title(add_appointment_menu, lit("doctor's information"));
+	form(add_appointment_menu, lit("first"), OPT_FORM_TEXT);
+	form(add_appointment_menu, lit("last"), OPT_FORM_TEXT);
+	form(add_appointment_menu, lit("room"), OPT_FORM_ROOM);
+	form(add_appointment_menu, lit("date"), OPT_FORM_DATE);
+
+	title(add_appointment_menu, lit("patient's information"));
+	form(add_appointment_menu, lit("first"), OPT_FORM_TEXT);
+	form(add_appointment_menu, lit("last"), OPT_FORM_TEXT);
+
+	center_button(add_appointment_menu, lit("save"), TUI_ADD_SAVE);
+	center_button(add_appointment_menu, lit("back"), TUI_ADD);
+}
+
+static inline void init_search_menu(void)
+{
+	struct menu *search_menu = &tui_menus[TUI_SEARCH];
+	init_menu(search_menu, TUI_PAGE_Y, 1);
+
+	title(search_menu, lit("search information"));
+	form(search_menu, lit("search"), OPT_FORM_TEXT);
+
+	center_button(search_menu, lit("back"), TUI_MAIN_MENU);
+	center_button(search_menu, lit("exit"), TUI_EXIT);
 }
 
 void init_menus(void)
 {
-	struct menu *main_menu = &tui_menus[TUI_MAIN_MENU];
-	main_menu->curr_opt = 1;
+	init_main_menu();
 
-	title(main_menu, TUI_TITLE_X, TUI_TITLE_Y, lit("Hospital Management System"));
-	button(main_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 0), lit("add information"), TUI_ADD);
-	button(main_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 1), lit("view information"), TUI_MAIN_MENU);
-	button(main_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 2), lit("edit information"), TUI_MAIN_MENU);
-	button(main_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 3), lit("search"), TUI_SEARCH);
-	button(main_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 4), lit("exit"), TUI_EXIT);
+	init_add_menu();
+	init_add_patient_menu();
+	init_add_appointment_menu();
 
-	struct menu *add_menu = &tui_menus[TUI_ADD];
-	add_menu->curr_opt = 1;
-
-	title(add_menu, TUI_TITLE_X, TUI_TITLE_Y, lit("add information"));
-	button(add_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 0),
-			lit("new patient record"), TUI_ADD_PATIENT);
-	button(add_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 1),
-			lit("new doctor's appointment"), TUI_ADD_APPOINTMENT);
-	button(add_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 2), lit("back"), TUI_MAIN_MENU);
-	button(add_menu, TUI_PAGE_X, SPACER(TUI_PAGE_Y, 3), lit("exit"), TUI_EXIT);
-
-	struct menu *add_patient_menu = &tui_menus[TUI_ADD_PATIENT];
-	add_patient_menu->curr_opt = 1;
-
-	title(add_patient_menu, TUI_TITLE_X, TUI_TITLE_Y, lit("new patient"));
-	form(add_patient_menu, TUI_FORM_X, SPACER(TUI_PAGE_Y, 0), lit("first"), OPT_FORM_TEXT);
-	form(add_patient_menu, TUI_FORM_X, SPACER(TUI_PAGE_Y, 1), lit("last"), OPT_FORM_TEXT);
-	form(add_patient_menu, TUI_FORM_X, SPACER(TUI_PAGE_Y, 2), lit("DOB"), OPT_FORM_DATE);
-	form(add_patient_menu, TUI_FORM_X, SPACER(TUI_PAGE_Y, 3), lit("notes"), OPT_FORM_TEXT);
-	button(add_patient_menu, TUI_FORM_X + FORM_INPUT_MAX * 1/2, SPACER(TUI_PAGE_Y, 4), lit("save"), TUI_ADD_SAVE);
-	button(add_patient_menu, TUI_FORM_X + FORM_INPUT_MAX * 1/2, SPACER(TUI_PAGE_Y, 5), lit("back"), TUI_ADD);
-
-	struct menu *add_appointment_menu = &tui_menus[TUI_ADD_APPOINTMENT];
-	add_appointment_menu->curr_opt = 1;
-
-	title(add_appointment_menu, TUI_TITLE_X, TUI_TITLE_Y, lit("doctor's information"));
-	form(add_appointment_menu, TUI_FORM_X, SPACER(TUI_TITLE_Y, 1), lit("first"), OPT_FORM_TEXT);
-	form(add_appointment_menu, TUI_FORM_X, SPACER(TUI_TITLE_Y, 2), lit("last"), OPT_FORM_TEXT);
-	form(add_appointment_menu, TUI_FORM_X, SPACER(TUI_TITLE_Y, 3), lit("room"), OPT_FORM_ROOM);
-
-	title(add_appointment_menu, TUI_TITLE_X, SPACER(TUI_TITLE_Y, 4), lit("patient's information"));
-	form(add_appointment_menu, TUI_FORM_X, SPACER(TUI_TITLE_Y, 5), lit("first"), OPT_FORM_TEXT);
-	form(add_appointment_menu, TUI_FORM_X, SPACER(TUI_TITLE_Y, 6), lit("last"), OPT_FORM_TEXT);
-	button(add_appointment_menu, TUI_FORM_X + FORM_INPUT_MAX * 1/2, SPACER(TUI_TITLE_Y, 7), lit("save"), TUI_ADD_SAVE);
-	button(add_appointment_menu, TUI_FORM_X + FORM_INPUT_MAX * 1/2, SPACER(TUI_TITLE_Y, 8), lit("back"), TUI_ADD);
-
-	struct menu *search_menu = &tui_menus[TUI_SEARCH];
-	search_menu->curr_opt = 1;
-
-	title(search_menu, TUI_TITLE_X, TUI_TITLE_Y, lit("search information"));
-	form(search_menu, TUI_FORM_X, SPACER(TUI_PAGE_Y, 0), lit("search"), OPT_FORM_TEXT);
-	button(search_menu, TUI_FORM_X + FORM_INPUT_MAX * 1/2, SPACER(TUI_PAGE_Y, 1), lit("back"), TUI_MAIN_MENU);
-	button(search_menu, TUI_FORM_X + FORM_INPUT_MAX * 1/2, SPACER(TUI_PAGE_Y, 2), lit("exit"), TUI_EXIT);
+	init_search_menu();
 }
 
 static void draw_form(const struct option *opt)
@@ -203,25 +246,34 @@ static void draw_input_cursor(const int x, const int y)
 static inline void append_input(const enum option_type type, struct form *form,
 		const int x, const int y, const char c)
 {
+	if (form->buflen >= form->bufcap)
+		return;
+
 	bool append = false;
 
 	switch (type) {
 	case OPT_FORM_TEXT:
-		append = (isalpha(c) && form->buflen + 1 <= FORM_TEXT_LEN);
+		append = (isalpha(c));
 		break;
 
 	case OPT_FORM_ROOM:
 	case OPT_FORM_DATE:
-		append = (isdigit(c) && form->buflen + 1 <= FORM_DATE_LEN);
+		append = (isdigit(c));
 		break;
 
 	default:	__builtin_unreachable();
 	}
 
-	if (append) {
-		mvaddch(y, x, c);
-		form->buf[form->buflen++] = c;
-	}
+	if (!append)
+		return;
+
+	mvaddch(y, x, c);
+	form->buf[form->buflen++] = c;
+}
+
+static inline void clear_cursor(const int x, const int y, const struct form *form)
+{
+	mvaddch(y, x, form->buflen == form->bufcap ? ' ' : '_');
 }
 
 static enum tui_state read_form_input(struct option *opt)
@@ -248,7 +300,7 @@ static enum tui_state read_form_input(struct option *opt)
 		case DELETE_KEY:
 		case BACKSPACE_KEY: {
 			if (form->buflen > 0) {
-				mvaddch(y, x, form->buflen == form->bufcap ? ' ' : '_');
+				clear_cursor(x, y, form);
 				form->buflen--;
 			}
 		} break;
@@ -258,7 +310,7 @@ static enum tui_state read_form_input(struct option *opt)
 	}
 
 	if (form->buflen <= form->bufcap)
-		mvaddch(y, x, form->buflen == form->bufcap ? ' ' : '_');
+		clear_cursor(x, y, form);
 
 	return TUI_NONE;
 }
@@ -266,11 +318,7 @@ static enum tui_state read_form_input(struct option *opt)
 static enum tui_state menu_select_option(struct menu *menu)
 {
 	struct option *opt = menu->opts + menu->curr_opt;
-
-	switch (opt->type) {
-	case OPT_BUTTON:	return opt->as.button;
-	default:		return read_form_input(opt);
-	}
+	return (opt->type == OPT_BUTTON) ? opt->as.button : read_form_input(opt);
 }
 
 enum tui_state menu_iteration(struct menu *menu, const bool update)
@@ -281,6 +329,14 @@ enum tui_state menu_iteration(struct menu *menu, const bool update)
 	enum tui_state state = TUI_NONE;
 
 	switch (getch()) {
+	case 'm':
+		state = TUI_MAIN_MENU;
+		break;
+	
+	case 'q':
+		state = TUI_EXIT;
+		break;
+
 	case KEY_DOWN:
 	case 's':
 	case 'S':

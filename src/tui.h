@@ -23,9 +23,9 @@ enum tui_state {
 	TUI_SEARCH,
 	TUI_EDIT,
 	TUI_EXIT,
-};
 
-#define TUI_TOTAL_STATES	TUI_EXIT
+	TUI_TOTAL_STATES,
+};
 
 extern bool tui_exited;
 extern WINDOW *tui_window;

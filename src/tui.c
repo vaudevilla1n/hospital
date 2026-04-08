@@ -51,9 +51,9 @@ static void update_tui_state(const enum tui_state state)
 	tui_update = true;
 }
 
-static inline enum tui_state save_forms(const struct menu *menu)
+static inline enum tui_state save_forms(const struct menu *menu, const enum tui_state menu_type)
 {
-	file_save_forms(menu);
+	file_save_forms(menu, menu_type);
 	return TUI_ADD;
 }
 
@@ -76,7 +76,7 @@ void tui_iteration(void)
 	case TUI_NONE:
 		break;
 	case TUI_ADD_SAVE:
-		state = save_forms(current_menu);
+		state = save_forms(current_menu, tui_current_state);
 		update_tui_state(state);
 		break;
 	default:
